@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounting-stage
+  annotations:
+    flux.weave.works/automated: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accounting-stage
+  template:
+    metadata:
+      labels:
+        app: accounting-stage
+    spec:
+      containers:
+      - image: 185479001913.dkr.ecr.eu-west-1.amazonaws.com/accounting-stage:bd13a53
+        ports:
+        - containerPort: 80
+        name: accounting
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounting-stage
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: 80
+  selector:
+    app: accounting-stage
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: accounting-stage
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: k8s-staging.accounting.ms.ovoko.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: accounting-stage
+            port: 
+                number: 8001
